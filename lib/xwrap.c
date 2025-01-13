@@ -172,7 +172,7 @@ void xputsn(char *s)
   xputsl(s, strlen(s));
 }
 
-// Write string to stdout with newline, flushing and checking for errors
+// Write string to stdout with newline, checking for errors
 void xputs(char *s)
 {
   puts(s);
@@ -198,6 +198,7 @@ void xvdaemon(void)
   }
 
   // new session id, point fd 0-2 at /dev/null, detach from tty
+  chdir("/");
   setsid();
   close(0);
   xopen_stdio("/dev/null", O_RDWR);

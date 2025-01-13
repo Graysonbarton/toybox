@@ -232,6 +232,7 @@ int unescape2(char **c, int echo);
 char *strend(char *str, char *suffix);
 int strstart(char **a, char *b);
 int strcasestart(char **a, char *b);
+int anystart(char *s, char **try);
 int same_file(struct stat *st1, struct stat *st2);
 int same_dev_ino(struct stat *st, struct dev_ino *di);
 off_t fdlength(int fd);
@@ -262,7 +263,7 @@ struct group *bufgetgrgid(gid_t gid);
 int readlinkat0(int dirfd, char *path, char *buf, int len);
 int readlink0(char *path, char *buf, int len);
 int regexec0(regex_t *preg, char *string, long len, int nmatch,
-  regmatch_t pmatch[], int eflags);
+  regmatch_t *pmatch, int eflags);
 char *getusername(uid_t uid);
 char *getgroupname(gid_t gid);
 void do_lines(int fd, char delim, void (*call)(char **pline, long len));
@@ -333,6 +334,8 @@ int terminal_probesize(unsigned *xx, unsigned *yy);
 #define KEY_ALT (1<<18)
 int scan_key(char *scratch, int timeout_ms);
 int scan_key_getsize(char *scratch, int timeout_ms, unsigned *xx, unsigned *yy);
+unsigned cfspeed2bps(unsigned speed);
+unsigned bps2cfspeed(unsigned baud);
 void xsetspeed(struct termios *tio, int speed);
 int set_terminal(int fd, int raw, int speed, struct termios *old);
 void xset_terminal(int fd, int raw, int speed, struct termios *old);
@@ -357,7 +360,9 @@ void xconnect(int fd, const struct sockaddr *sa, socklen_t len);
 int xconnectany(struct addrinfo *ai);
 int xbindany(struct addrinfo *ai);
 int xpoll(struct pollfd *fds, int nfds, int timeout);
-int pollinate(int in1, int in2, int out1, int out2, int timeout, int shutdown_timeout);
+int pollinate(int in1, int in2, int out1, int out2,
+              void (*callback)(int fd, void *buf, size_t len),
+              int timeout, int shutdown_timeout);
 char *ntop(struct sockaddr *sa);
 void xsendto(int sockfd, void *buf, size_t len, struct sockaddr *dest);
 int xrecvwait(int fd, char *buf, int len, union socksaddr *sa, int timeout);
@@ -406,8 +411,8 @@ void exit_signal(int signal);
 void sigatexit(void *handler);
 void list_signals(void);
 
-mode_t string_to_mode(char *mode_str, mode_t base);
-void mode_to_string(mode_t mode, char *buf);
+unsigned string_to_mode(char *mode_str, unsigned base);
+void mode_to_string(unsigned mode, char *buf);
 char *getbasename(char *name);
 char *fileunderdir(char *file, char *dir);
 void *mepcpy(void *from, void *to, unsigned long len);

@@ -37,7 +37,8 @@ config MOUNT
     Autodetects loopback mounts (a file on a directory) and bind mounts (file
     on file, directory on directory), so you don't need to say --bind or --loop.
     You can also "mount -a /path" to mount everything in /etc/fstab under /path,
-    even if it's noauto. DEVICE starting with UUID= is identified by blkid -U.
+    even if it's noauto. DEVICE starting with UUID= is identified by blkid -U,
+    and DEVICE starting with LABEL= is identified by blkid -L.
 
 #config SMBMOUNT
 #  bool "smbmount"
@@ -169,6 +170,12 @@ static void mount_filesystem(char *dev, char *dir, char *type,
     char *s = chomp(xrunread((char *[]){"blkid", "-U", dev, 0}, 0));
 
     if (!s || strlen(s)>=sizeof(toybuf)) return error_msg("No uuid %s", dev);
+    strcpy(dev = toybuf, s);
+    free(s);
+  } else if (strstart(&dev, "LABEL=")) {
+    char *s = chomp(xrunread((char *[]){"blkid", "-L", dev, 0}, 0));
+
+    if (!s || strlen(s)>=sizeof(toybuf)) return error_msg("No label %s", dev);
     strcpy(dev = toybuf, s);
     free(s);
   }
@@ -373,13 +380,28 @@ void mount_main(void)
   // show mounts from /proc/mounts
   } else if (!dev) {
     for (mtl = xgetmountlist(0); mtl && (mm = dlist_pop(&mtl)); free(mm)) {
-      char *s = 0;
+      char *s = mm->device, *ss = "", *temp;
+      struct stat st;
 
       if (TT.t && strcmp(TT.t, mm->type)) continue;
-      if (*mm->device == '/') s = xabspath(mm->device, 0);
-      xprintf("%s on %s type %s (%s)\n",
-              s ? s : mm->device, mm->dir, mm->type, mm->opts);
-      free(s);
+      if (*s == '/') {
+        if (!stat(mm->device, &st) && S_ISBLK(st.st_mode) &&
+            dev_major(st.st_rdev)==7)
+        {
+          temp = xmprintf("/sys/block/loop%d/loop/backing_file",
+            dev_minor(st.st_rdev));
+          s = chomp(readfile(temp, 0, 0));
+          free(temp);
+          if (s) {
+            ss = xmprintf(",file=%s"+!*mm->opts, s);
+            free(s);
+          };
+        }
+        s = xabspath(mm->device, 0);
+      }
+      xprintf("%s on %s type %s (%s%s)\n", s, mm->dir, mm->type, mm->opts, ss);
+      if (s != mm->device) free(s);
+      if (*ss) free(ss);
     }
 
   // two arguments

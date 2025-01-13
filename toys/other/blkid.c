@@ -168,7 +168,8 @@ static void do_blkid(int fd, char *name)
   if (!FLAG(U) && len) {
     s = toybuf+fstypes[i].label_off-off;
     if (!strcmp(type, "vfat") || !strcmp(type, "iso9660")) {
-      if (*type=='v') show_tag("SEC_TYPE", "msdos");
+      if (*type=='v' && fstypes[i].magic_len==4 && !FLAG(L))
+        show_tag("SEC_TYPE", "msdos");
       while (len && s[len-1]==' ') len--;
       if (strstart(&s, "NO NAME")) len=0;
     }
@@ -205,6 +206,7 @@ static void do_blkid(int fd, char *name)
         if (!(i&1)) *s++ = '-';
         *s++ = toybuf[uoff++];
       }
+      *s = 0;
     } else {
       for (j = 0; j < 16; j++)
         s += sprintf(s, "-%02x"+!(0x550 & (1<<j)), toybuf[uoff+j]);

@@ -43,13 +43,10 @@
 // Test for gcc (using compiler builtin #define)
 
 #ifdef __GNUC__
-#ifndef __clang__
 #define QUIET = 0 // shut up false positive "may be used uninitialized" warning
-#else
-#define QUIET
-#endif
 #define printf_format	__attribute__((format(printf, 1, 2)))
 #else
+#define QUIET
 #define printf_format
 #endif
 
@@ -131,49 +128,25 @@ void *memmem(const void *haystack, size_t haystack_length,
 
 // Work out how to do endianness
 
+#define IS_LITTLE_ENDIAN (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+#define IS_BIG_ENDIAN (!IS_LITTLE_ENDIAN)
+
 #ifdef __APPLE__
 
 #include <libkern/OSByteOrder.h>
-
-#ifdef __BIG_ENDIAN__
-#define IS_BIG_ENDIAN 1
-#else
-#define IS_BIG_ENDIAN 0
-#endif
-
 #define bswap_16(x) OSSwapInt16(x)
 #define bswap_32(x) OSSwapInt32(x)
 #define bswap_64(x) OSSwapInt64(x)
-
 #elif defined(__FreeBSD__) || defined(__OpenBSD__)
-
 #include <sys/endian.h>
-
-#if _BYTE_ORDER == _BIG_ENDIAN
-#define IS_BIG_ENDIAN 1
-#else
-#define IS_BIG_ENDIAN 0
-#endif
-
 #define bswap_16(x) bswap16(x)
 #define bswap_32(x) bswap32(x)
 #define bswap_64(x) bswap64(x)
-
 #else
-
 #include <byteswap.h>
-#include <endian.h>
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define IS_BIG_ENDIAN 1
-#else
-#define IS_BIG_ENDIAN 0
-#endif
-
 #endif
 
 #if IS_BIG_ENDIAN
-#define IS_LITTLE_ENDIAN 0
 #define SWAP_BE16(x) (x)
 #define SWAP_BE32(x) (x)
 #define SWAP_BE64(x) (x)
@@ -181,7 +154,6 @@ void *memmem(const void *haystack, size_t haystack_length,
 #define SWAP_LE32(x) bswap_32(x)
 #define SWAP_LE64(x) bswap_64(x)
 #else
-#define IS_LITTLE_ENDIAN 1
 #define SWAP_BE16(x) bswap_16(x)
 #define SWAP_BE32(x) bswap_32(x)
 #define SWAP_BE64(x) bswap_64(x)
@@ -341,20 +313,6 @@ static inline int stub_out_log_write(int pri, const char *tag, const char *msg)
 #define __android_log_write(a, b, c) stub_out_log_write(a, b, c)
 #endif
 
-#endif
-
-// libprocessgroup is an Android platform library not included in the NDK.
-#if defined(__BIONIC__)
-#if __has_include(<processgroup/sched_policy.h>)
-#include <processgroup/sched_policy.h>
-#define GOT_IT
-#endif
-#endif
-#ifdef GOT_IT
-#undef GOT_IT
-#else
-static inline int get_sched_policy(int tid, void *policy) {return 0;}
-static inline char *get_sched_policy_name(int policy) {return "unknown";}
 #endif
 
 #ifndef SYSLOG_NAMES

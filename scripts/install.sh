@@ -105,9 +105,8 @@ done
 # The following are commands toybox should provide, but doesn't yet.
 # For now symlink the host version. This list must go away by 1.0.
 
-PENDING="expr git tr bash sh gzip   awk bison flex make"
-TOOLCHAIN="as cc ld objdump"
-TOOLCHAIN+=" bc gcc" # both patched out but not in vanilla yet
+PENDING="expr git tr bash sh gzip   awk bison flex make ar"
+TOOLCHAIN="${TOOLCHAIN//,/ } as cc ld objdump  bc gcc"
 
 # Tools needed to build packages
 for i in $TOOLCHAIN $PENDING $HOST_EXTRA
